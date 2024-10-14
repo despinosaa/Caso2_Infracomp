@@ -1,3 +1,6 @@
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Scanner;
 
 public class App {
@@ -32,5 +35,14 @@ public class App {
         System.out.println("NR=" + (imagen.leerLongitud()*17 + 16)); 
         System.out.println("NP=" + ((imagen.alto * imagen.ancho * 3 / pageSize)));
 
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Referencias.txt"))) {
+            for (int i = 0; i < imagen.alto; i++) {
+                for (int j = 0; j < imagen.ancho; j++) {
+                    
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error al escribir el archivo: " + e.getMessage());
+        }
     }
 }
