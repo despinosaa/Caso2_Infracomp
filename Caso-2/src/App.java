@@ -98,7 +98,7 @@ public class App {
 		try {
 			FileWriter fileWriter = new FileWriter(filePath);
 			BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-			bufferedWriter.write("P=" + P + " y longitud= " + longitud + "\n");
+			bufferedWriter.write("P=" + P + "\n");
 			bufferedWriter.write("NF=" + NF + "\n");
 			bufferedWriter.write("NC=" + NC + "\n");
 			bufferedWriter.write("NR=" + NR + "\n");
