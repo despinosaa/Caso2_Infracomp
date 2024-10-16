@@ -20,9 +20,9 @@ public class App {
     private List<Integer> referencias;  
     private int hits;  
     private int fallas; 
-	private final Map<Integer, Long> memoria = new LinkedHashMap<>(); 
-	private final List<Integer> swap = new ArrayList<>(); 
-	private volatile boolean x = true; 
+	private final Map<Integer, Long> memoria = new LinkedHashMap<>();
+	private final List<Integer> swap = new ArrayList<>();
+	private volatile boolean x = true;
 
 
 	// Opción 1: generar las referencias
@@ -198,9 +198,11 @@ public class App {
                         memoria.put(pagina, actualizarContador(contador, true));
                     } else {
                         fallas++;
-                        if (swap.contains(pagina)) {
-                            swap.remove(pagina);
-                        }
+                        synchronized (swap) {
+							if (!swap.contains(pagina)) {
+								swap.add(pagina);
+							}
+						}
                         if (memoria.size() >= numeroDeMarcos) {
                             reemplazarPagina(pagina);
                         } else {
