@@ -20,7 +20,8 @@ public class App {
     private List<Integer> referencias;  
     private int hits;  
     private int fallas; 
-	private final Map<Integer, Long> marcos = new LinkedHashMap<>();
+	private final Map<Integer, Long> memoria = new LinkedHashMap<>(); 
+	private final List<Integer> swap = new ArrayList<>(); 
 
 
 	// Opción 1: generar las referencias
@@ -132,123 +133,123 @@ public class App {
 
     // Opción 2: calcular número de fallas de página, porcentaje de hits y tiempos
     public void calcularFallasHitsTiempos(int numeroDeMarcos, String nombreArchivo) {
-		System.out.println("------------------------------------");
-		this.numeroDeMarcos = numeroDeMarcos;
-		cargarReferencias(nombreArchivo);
-		hits = 0;
-		fallas = 0;
-	
-		Thread actualizador = new Thread(new Actualizador());
-		Thread actualizadorBitR = new Thread(new ActualizadorBitR());
-		actualizador.start();
-		actualizadorBitR.start();
-		try {
-			actualizador.join();
-			actualizadorBitR.join();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+        System.out.println("------------------------------------");
+        this.numeroDeMarcos = numeroDeMarcos;
+        cargarReferencias(nombreArchivo);
+        hits = 0;
+        fallas = 0;
 
-		long tiempoTotal = (hits * 25 + fallas * 10000000)/1000000;
-		long tiempoSiTodoEnRAM = (referencias.size() * 25)/1000000; 
-		long tiempoSiTodoEnSWAP = (referencias.size() * 10);  
-		double porcentajeHits = (hits * 100.00) / referencias.size();
-		double porcentajeFallas = (fallas * 100.00) / referencias.size();
+        Thread actualizador = new Thread(new Actualizador());
+        Thread actualizadorBitR = new Thread(new ActualizadorBitR());
+        actualizador.start();
+        actualizadorBitR.start();
+        try {
+            actualizador.join();
+            actualizadorBitR.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
-		System.out.println("------------------------------------");
-		System.out.println("Numero de marcos de pagina: " + numeroDeMarcos);
-		System.out.println("Total de referencias: " + referencias.size());
-		System.out.println("Total de hits: " + hits);
-		System.out.printf("Porcentaje de hits: %.2f%%\n", porcentajeHits);
-		System.out.println("Numero de fallas: " + fallas);
-		System.out.printf("Porcentaje de fallas: %.2f%%\n", porcentajeFallas); 
-		System.out.println("Tiempo total con hits y fallas: " + tiempoTotal + " ms");
-		System.out.println("Tiempo si todas las referencias estuvieran en RAM: " + tiempoSiTodoEnRAM + " ms");
-		System.out.println("Tiempo si todas las referencias fueran fallas de pagina: " + tiempoSiTodoEnSWAP + " ms");
-		System.out.println("------------------------------------");
-	}
+        long tiempoTotal = (hits * 25 + fallas * 10000000)/1000000;
+        long tiempoSiTodoEnRAM = (referencias.size() * 25)/1000000;
+        long tiempoSiTodoEnSWAP = (referencias.size() * 10);
+        double porcentajeHits = (hits * 100.00) / referencias.size();
+        double porcentajeFallas = (fallas * 100.00) / referencias.size();
 
-	// cargar referencias desde el archivo
-	private void cargarReferencias(String nombreArchivo) {
-		referencias = new ArrayList<>();
-		try (BufferedReader reader = new BufferedReader(new FileReader(nombreArchivo))) {
-			String linea;
-			while ((linea = reader.readLine()) != null) {
-				String[] partes = linea.split(",");
-				if (partes.length > 1 && !linea.startsWith("P=") && !linea.startsWith("NF=") &&
-					!linea.startsWith("NC=") && !linea.startsWith("NR=") && !linea.startsWith("NP=")) {
-					int pagina = Integer.parseInt(partes[1].trim());
-					referencias.add(pagina);
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
+        System.out.println("------------------------------------");
+        System.out.println("Numero de marcos de pagina: " + numeroDeMarcos);
+        System.out.println("Total de referencias: " + referencias.size());
+        System.out.println("Total de hits: " + hits);
+        System.out.printf("Porcentaje de hits: %.2f%%\n", porcentajeHits);
+        System.out.println("Numero de fallas: " + fallas);
+        System.out.printf("Porcentaje de fallas: %.2f%%\n", porcentajeFallas);
+        System.out.println("Tiempo total con hits y fallas: " + tiempoTotal + " ms");
+        System.out.println("Tiempo si todas las referencias estuvieran en RAM: " + tiempoSiTodoEnRAM + " ms");
+        System.out.println("Tiempo si todas las referencias fueran fallas de pagina: " + tiempoSiTodoEnSWAP + " ms");
+        System.out.println("------------------------------------");
+    }
 
-	private class Actualizador implements Runnable {
-		@Override
-		public void run() {
-			for (int pagina : referencias) {
-				synchronized (marcos) {
-					if (marcos.containsKey(pagina)) {
-						hits++;
-						long contador = marcos.get(pagina);
-						marcos.put(pagina, actualizarContador(contador, true));
-					} else {
-						fallas++;
-						if (marcos.size() < numeroDeMarcos) {
-							marcos.put(pagina, actualizarContador(0, true));
-						} else {
-							reemplazarPagina(pagina);
-						}
-					}
-				}
-				try {
-					Thread.sleep(1); 
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					break;
-				}
-			}
-		}
-	}
+    private void cargarReferencias(String nombreArchivo) {
+        referencias = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(nombreArchivo))) {
+            String linea;
+            while ((linea = reader.readLine()) != null) {
+                String[] partes = linea.split(",");
+                if (partes.length > 1 && !linea.startsWith("P=") && !linea.startsWith("NF=") &&
+                    !linea.startsWith("NC=") && !linea.startsWith("NR=") && !linea.startsWith("NP=")) {
+                    int pagina = Integer.parseInt(partes[1].trim());
+                    referencias.add(pagina);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    private class Actualizador implements Runnable {
+        @Override
+        public void run() {
+            for (int pagina : referencias) {
+                synchronized (memoria) {
+                    if (memoria.containsKey(pagina)) {
+                        hits++;
+                        long contador = memoria.get(pagina);
+                        memoria.put(pagina, actualizarContador(contador, true));
+                    } else {
+                        fallas++;
+                        if (swap.contains(pagina)) {
+                            swap.remove((Integer) pagina); // quitar de swap si existe
+                        }
+                        if (memoria.size() >= numeroDeMarcos) {
+                            reemplazarPagina(pagina);
+                        } else {
+                            memoria.put(pagina, actualizarContador(0, true));
+                        }
+                    }
+                }
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+    }
+    private class ActualizadorBitR implements Runnable {
+        @Override
+        public void run() {
+            long startTime = System.currentTimeMillis();
+            while (System.currentTimeMillis() - startTime < 10000) {
+                synchronized (memoria) {
+                    for (Map.Entry<Integer, Long> entry : memoria.entrySet()) {
+                        long contador = entry.getValue();
+                        memoria.put(entry.getKey(), actualizarContador(contador, false));
+                    }
+                }
+                try {
+                    Thread.sleep(2);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+    }
 
-	private class ActualizadorBitR implements Runnable {
-		@Override
-		public void run() {
-			long startTime = System.currentTimeMillis();
-			while (System.currentTimeMillis() - startTime < 10000) { 
-				synchronized (marcos) {
-					for (Map.Entry<Integer, Long> entry : marcos.entrySet()) {
-						long contador = entry.getValue();
-						marcos.put(entry.getKey(), actualizarContador(contador, false));
-					}
-				}
-				try {
-					Thread.sleep(2); 
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					break;
-				}
-			}
-		}
-	}
+    private long actualizarContador(long contador, boolean acceso) {
+        contador >>= 1;
+        if (acceso) {
+            contador |= (1L << 31);
+        }
+        return contador;
+    }
 
-	private long actualizarContador(long contador, boolean acceso) {
-		contador >>= 1;
-		if (acceso) {
-			contador |= (1L << 31); 
-		}
-		return contador;
-	}
-	
-	private void reemplazarPagina(int paginaNueva) {
-		Integer quitar = marcos.keySet().iterator().next();
-		marcos.remove(quitar);
-		marcos.put(paginaNueva, actualizarContador(0, true));
-	}
+    private void reemplazarPagina(int paginaNueva) {
+        Integer quitar = memoria.keySet().iterator().next(); 
+        memoria.remove(quitar); 
+        swap.add(quitar); 
+        memoria.put(paginaNueva, actualizarContador(0, true)); 
+    }
 
     public static void main(String[] args) {
 		boolean continuar = true;
@@ -273,7 +274,7 @@ public class App {
 				referenciasGeneradas = true;
 	
 			} else if (opcion == 2) {
-				// Opción 2: Calcular número de fallas de página, hits, tiempos
+				// Opción 2: Calcular numero de fallas de página, hits, tiempos
 				if (!referenciasGeneradas) {
 					System.out.println("Primero debe generar las referencias en la opción 1.");
 				} else {
