@@ -22,6 +22,7 @@ public class App {
     private int fallas; 
 	private final Map<Integer, Long> memoria = new LinkedHashMap<>(); 
 	private final List<Integer> swap = new ArrayList<>(); 
+	private volatile boolean x = true; 
 
 
 	// Opción 1: generar las referencias
@@ -139,12 +140,13 @@ public class App {
         hits = 0;
         fallas = 0;
 
-        Thread actualizador = new Thread(new Actualizador());
+        Thread actualizador = new Thread(new ActualizadorReferencias());
         Thread actualizadorBitR = new Thread(new ActualizadorBitR());
         actualizador.start();
         actualizadorBitR.start();
         try {
             actualizador.join();
+			x = false; 
             actualizadorBitR.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -185,7 +187,7 @@ public class App {
             e.printStackTrace();
         }
     }
-    private class Actualizador implements Runnable {
+    private class ActualizadorReferencias implements Runnable {
         @Override
         public void run() {
             for (int pagina : referencias) {
@@ -197,7 +199,7 @@ public class App {
                     } else {
                         fallas++;
                         if (swap.contains(pagina)) {
-                            swap.remove((Integer) pagina); // quitar de swap si existe
+                            swap.remove(pagina);
                         }
                         if (memoria.size() >= numeroDeMarcos) {
                             reemplazarPagina(pagina);
@@ -218,8 +220,7 @@ public class App {
     private class ActualizadorBitR implements Runnable {
         @Override
         public void run() {
-            long startTime = System.currentTimeMillis();
-            while (System.currentTimeMillis() - startTime < 10000) {
+            while (x) {
                 synchronized (memoria) {
                     for (Map.Entry<Integer, Long> entry : memoria.entrySet()) {
                         long contador = entry.getValue();
