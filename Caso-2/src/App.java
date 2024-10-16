@@ -248,11 +248,23 @@ public class App {
     }
 
     private void reemplazarPagina(int paginaNueva) {
-        Integer quitar = memoria.keySet().iterator().next(); 
-        memoria.remove(quitar); 
-        swap.add(quitar); 
-        memoria.put(paginaNueva, actualizarContador(0, true)); 
-    }
+		Integer paginaAReemplazar = null;
+		long contadorMin = Long.MAX_VALUE;
+		synchronized (memoria) {
+			for (Map.Entry<Integer, Long> entry : memoria.entrySet()) {
+				if (entry.getValue() < contadorMin) {
+					contadorMin = entry.getValue();
+					paginaAReemplazar = entry.getKey();
+				}
+			}
+			if (paginaAReemplazar != null) {
+				swap.add(paginaAReemplazar);
+				memoria.remove(paginaAReemplazar);
+			}
+			memoria.put(paginaNueva, actualizarContador(0, true));
+		}
+	}
+	
 
     public static void main(String[] args) {
 		boolean continuar = true;
