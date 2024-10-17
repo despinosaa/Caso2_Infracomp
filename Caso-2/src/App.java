@@ -309,6 +309,8 @@ public class App {
 				System.out.println("Ingrese el mensaje a esconder: ");
 				String mensaje = scanner.nextLine();
 				imagen.esconder(mensaje.toCharArray(), mensaje.length());
+				imagen.escribirImagen("imagen_con_mensaje.bmp");
+				System.out.println("Imagen con mensaje guardada en imagen_con_mensaje.bmp");
 
 				
 			} else if (opcion == 4) {
