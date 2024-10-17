@@ -278,7 +278,9 @@ public class App {
 			System.out.println("Elija una opción:");
 			System.out.println("1. Generar Referencias.");
 			System.out.println("2. Calcular número de fallas de página, porcentaje de hits, tiempos.");
-			System.out.println("3. Salir");
+			System.out.println("3. Cargar imagen y esconder mensaje.");
+			System.out.println("4. Recuperar mensaje de imagen.");
+			System.out.println("5. Salir.");
 	
 			int opcion = scanner.nextInt();
 			scanner.nextLine();
@@ -301,9 +303,27 @@ public class App {
         			main.calcularFallasHitsTiempos(numeroDeMarcos, nombreArchivo);
 				}
 			} else if (opcion == 3) {
+				System.out.println("Ingrese la ruta de la imagen: ");
+				String input = scanner.nextLine();
+				Imagen imagen = new Imagen(input);
+				System.out.println("Ingrese el mensaje a esconder: ");
+				String mensaje = scanner.nextLine();
+				imagen.esconder(mensaje.toCharArray(), mensaje.length());
+
+				
+			} else if (opcion == 4) {
+				System.out.println("Ingrese la ruta de la imagen: ");
+				String input = scanner.nextLine();
+				Imagen imagen = new Imagen(input);
+				int longitud = imagen.leerLongitud();
+				System.out.println("Longitud del mensaje: " + longitud);
+				char[] mensaje = new char[longitud];
+				imagen.recuperar(mensaje, longitud);
+				System.out.println("Mensaje recuperado: " + new String(mensaje));
+			} else if (opcion == 5) {
 				continuar = false;
 				scanner.close();
-			} else {
+			}else {
 				System.out.println("Opción no válida. Por favor, elija 1 o 2.");
 			}
 		}
