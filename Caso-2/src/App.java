@@ -17,11 +17,10 @@ public class App {
 	int NP; // numero de paginas virtuales
 
 	private int numeroDeMarcos;  
-    private List<Integer> referencias;  
-    private int hits;  
+	private List<int[]> referencias;
+	private int hits;  
     private int fallas; 
-	private final Map<Integer, Long> memoria = new LinkedHashMap<>();
-	private final List<Integer> swap = new ArrayList<>();
+    private final Map<Integer, int[]> memoria = new LinkedHashMap<>();
 	private volatile boolean x = true;
 
 
@@ -155,10 +154,9 @@ public class App {
         long tiempoTotal = (hits * 25 + fallas * 10000000)/1000000;
         long tiempoSiTodoEnRAM = (referencias.size() * 25)/1000000;
         long tiempoSiTodoEnSWAP = (referencias.size() * 10);
-        double porcentajeHits = (hits * 100.00) / referencias.size();
-        double porcentajeFallas = (fallas * 100.00) / referencias.size();
+        double porcentajeHits = (hits * 100.000) / referencias.size();
+        double porcentajeFallas = (fallas * 100.000) / referencias.size();
 
-        System.out.println("------------------------------------");
         System.out.println("Numero de marcos de pagina: " + numeroDeMarcos);
         System.out.println("Total de referencias: " + referencias.size());
         System.out.println("Total de hits: " + hits);
@@ -172,61 +170,69 @@ public class App {
     }
 
     private void cargarReferencias(String nombreArchivo) {
-        referencias = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(nombreArchivo))) {
-            String linea;
-            while ((linea = reader.readLine()) != null) {
-                String[] partes = linea.split(",");
-                if (partes.length > 1 && !linea.startsWith("P=") && !linea.startsWith("NF=") &&
-                    !linea.startsWith("NC=") && !linea.startsWith("NR=") && !linea.startsWith("NP=")) {
-                    int pagina = Integer.parseInt(partes[1].trim());
-                    referencias.add(pagina);
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+		referencias = new ArrayList<>();
+		try (BufferedReader reader = new BufferedReader(new FileReader(nombreArchivo))) {
+			String linea;
+			while ((linea = reader.readLine()) != null) {
+				String[] partes = linea.split(",");
+				if (partes.length > 1 && !linea.startsWith("P=") && !linea.startsWith("NF=") &&
+						!linea.startsWith("NC=") && !linea.startsWith("NR=") && !linea.startsWith("NP=")) {
+					int pagina = Integer.parseInt(partes[1].trim());
+					int esEscritura = 0;
+					if (partes[3].trim().equals("W")) {
+						esEscritura = 1; // Marca como escritura si es "W"
+					}
+					referencias.add(new int[]{pagina, esEscritura});
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
     private class ActualizadorReferencias implements Runnable {
-        @Override
-        public void run() {
-            for (int pagina : referencias) {
-                synchronized (memoria) {
-                    if (memoria.containsKey(pagina)) {
-                        hits++;
-                        long contador = memoria.get(pagina);
-                        memoria.put(pagina, actualizarContador(contador, true));
-                    } else {
-                        fallas++;
-                        synchronized (swap) {
-							if (!swap.contains(pagina)) {
-								swap.add(pagina);
-							}
+		@Override
+		public void run() {
+			for (int[] referencia : referencias) {
+				int pagina = referencia[0];
+				boolean esEscritura = referencia[1] == 1;
+				synchronized (memoria) {
+					if (memoria.containsKey(pagina)) {
+						hits++;
+						int[] bits = memoria.get(pagina);
+						bits[0] = 1; 
+						if (esEscritura) {
+							bits[1] = 1; 
 						}
-                        if (memoria.size() >= numeroDeMarcos) {
-                            reemplazarPagina(pagina);
-                        } else {
-                            memoria.put(pagina, actualizarContador(0, true));
-                        }
-                    }
-                }
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
-        }
-    }
+					} else {
+						fallas++;
+						if (memoria.size() >= numeroDeMarcos) {
+							reemplazarPagina(pagina, esEscritura);
+						} else {
+							int bitM = 0;
+							if (esEscritura) {
+								bitM = 1;
+							}
+							memoria.put(pagina, new int[]{1, bitM}); 
+						}
+					}
+				}
+				try {
+					Thread.sleep(1);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					break;
+				}
+			}
+		}
+	}
+	
     private class ActualizadorBitR implements Runnable {
         @Override
         public void run() {
             while (x) {
                 synchronized (memoria) {
-                    for (Map.Entry<Integer, Long> entry : memoria.entrySet()) {
-                        long contador = entry.getValue();
-                        memoria.put(entry.getKey(), actualizarContador(contador, false));
+                    for (int[] bits : memoria.values()) {
+                        bits[0] = 0; 
                     }
                 }
                 try {
@@ -239,29 +245,38 @@ public class App {
         }
     }
 
-    private long actualizarContador(long contador, boolean acceso) {
-        contador >>= 1;
-        if (acceso) {
-            contador |= (1L << 31);
-        }
-        return contador;
-    }
-
-    private void reemplazarPagina(int paginaNueva) {
+	private void reemplazarPagina(int paginaNueva, boolean esEscritura) {
 		Integer paginaAReemplazar = null;
-		long contadorMin = Long.MAX_VALUE;
+		int[] bitsAReemplazar = null;
 		synchronized (memoria) {
-			for (Map.Entry<Integer, Long> entry : memoria.entrySet()) {
-				if (entry.getValue() < contadorMin) {
-					contadorMin = entry.getValue();
-					paginaAReemplazar = entry.getKey();
+			for (Map.Entry<Integer, int[]> entry : memoria.entrySet()) {
+				int[] bits = entry.getValue();
+				int quitar = entry.getKey();
+				if (bits[0] == 0 && bits[1] == 0) {
+					paginaAReemplazar = quitar;
+					break; 
+				}
+				else if (paginaAReemplazar == null || (bits[0] == 0 && bits[1] == 1 && (bitsAReemplazar == null || bitsAReemplazar[0] == 1))) {
+					paginaAReemplazar = quitar;
+					bitsAReemplazar = bits;
+				}
+				else if ((bits[0] == 1 && bits[1] == 0 && (bitsAReemplazar == null || bitsAReemplazar[0] == 1 && bitsAReemplazar[1] == 1))) {
+					paginaAReemplazar = quitar;
+					bitsAReemplazar = bits;
+				}
+				else if (bitsAReemplazar == null) {
+					paginaAReemplazar = quitar;
+					bitsAReemplazar = bits;
 				}
 			}
 			if (paginaAReemplazar != null) {
-				swap.add(paginaAReemplazar);
 				memoria.remove(paginaAReemplazar);
 			}
-			memoria.put(paginaNueva, actualizarContador(0, true));
+			int bitM = 0;
+			if (esEscritura) {
+				bitM = 1;
+			}
+			memoria.put(paginaNueva, new int[]{1, bitM});
 		}
 	}
 	
@@ -273,7 +288,6 @@ public class App {
 	
 		while (continuar) {
 			System.out.println("-- Menu de opciones --");
-	
 			Scanner scanner = new Scanner(System.in);
 			System.out.println("Elija una opción:");
 			System.out.println("1. Generar Referencias.");
@@ -311,8 +325,6 @@ public class App {
 				imagen.esconder(mensaje.toCharArray(), mensaje.length());
 				imagen.escribirImagen("imagen_con_mensaje.bmp");
 				System.out.println("Imagen con mensaje guardada en imagen_con_mensaje.bmp");
-
-				
 			} else if (opcion == 4) {
 				System.out.println("Ingrese la ruta de la imagen: ");
 				String input = scanner.nextLine();
