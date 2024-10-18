@@ -20,7 +20,7 @@ public class App {
 	private List<int[]> referencias;
 	private int hits;  
     private int fallas; 
-    private final Map<Integer, int[]> memoria = new LinkedHashMap<>();
+    private final Map<Integer, int[]> ram = new LinkedHashMap<>();
 	private volatile boolean x = true;
 
 
@@ -180,7 +180,7 @@ public class App {
 					int pagina = Integer.parseInt(partes[1].trim());
 					int esEscritura = 0;
 					if (partes[3].trim().equals("W")) {
-						esEscritura = 1; // Marca como escritura si es "W"
+						esEscritura = 1;
 					}
 					referencias.add(new int[]{pagina, esEscritura});
 				}
@@ -195,24 +195,24 @@ public class App {
 			for (int[] referencia : referencias) {
 				int pagina = referencia[0];
 				boolean esEscritura = referencia[1] == 1;
-				synchronized (memoria) {
-					if (memoria.containsKey(pagina)) {
+				synchronized (ram) {
+					if (ram.containsKey(pagina)) {
 						hits++;
-						int[] bits = memoria.get(pagina);
+						int[] bits = ram.get(pagina);
 						bits[0] = 1; 
 						if (esEscritura) {
 							bits[1] = 1; 
 						}
 					} else {
 						fallas++;
-						if (memoria.size() >= numeroDeMarcos) {
+						if (ram.size() >= numeroDeMarcos) {
 							reemplazarPagina(pagina, esEscritura);
 						} else {
 							int bitM = 0;
 							if (esEscritura) {
 								bitM = 1;
 							}
-							memoria.put(pagina, new int[]{1, bitM}); 
+							ram.put(pagina, new int[]{1, bitM}); 
 						}
 					}
 				}
@@ -230,8 +230,8 @@ public class App {
         @Override
         public void run() {
             while (x) {
-                synchronized (memoria) {
-                    for (int[] bits : memoria.values()) {
+                synchronized (ram) {
+                    for (int[] bits : ram.values()) {
                         bits[0] = 0; 
                     }
                 }
@@ -248,8 +248,8 @@ public class App {
 	private void reemplazarPagina(int paginaNueva, boolean esEscritura) {
 		Integer paginaAReemplazar = null;
 		int[] bitsAReemplazar = null;
-		synchronized (memoria) {
-			for (Map.Entry<Integer, int[]> entry : memoria.entrySet()) {
+		synchronized (ram) {
+			for (Map.Entry<Integer, int[]> entry : ram.entrySet()) {
 				int[] bits = entry.getValue();
 				int quitar = entry.getKey();
 				if (bits[0] == 0 && bits[1] == 0) {
@@ -270,13 +270,13 @@ public class App {
 				}
 			}
 			if (paginaAReemplazar != null) {
-				memoria.remove(paginaAReemplazar);
+				ram.remove(paginaAReemplazar);
 			}
 			int bitM = 0;
 			if (esEscritura) {
 				bitM = 1;
 			}
-			memoria.put(paginaNueva, new int[]{1, bitM});
+			ram.put(paginaNueva, new int[]{1, bitM});
 		}
 	}
 	
