@@ -4,9 +4,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
 public class App {
@@ -18,10 +16,6 @@ public class App {
 
 	private int numeroDeMarcos;  
 	private List<int[]> referencias;
-	private int hits;  
-    private int fallas; 
-    private final Map<Integer, int[]> ram = new LinkedHashMap<>();
-	private volatile boolean x = true;
 
 
 	// Opción 1: generar las referencias
@@ -131,42 +125,11 @@ public class App {
 		}
 	}
 
-    // Opción 2: calcular número de fallas de página, porcentaje de hits y tiempos
+	// Opción 1: empezar simulacion 
     public void calcularFallasHitsTiempos(int numeroDeMarcos, String nombreArchivo) {
-        System.out.println("------------------------------------");
-        this.numeroDeMarcos = numeroDeMarcos;
         cargarReferencias(nombreArchivo);
-        hits = 0;
-        fallas = 0;
-
-        Thread actualizador = new Thread(new ActualizadorReferencias());
-        Thread actualizadorBitR = new Thread(new ActualizadorBitR());
-        actualizador.start();
-        actualizadorBitR.start();
-        try {
-            actualizador.join();
-			x = false; 
-            actualizadorBitR.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        long tiempoTotal = (hits * 25 + fallas * 10000000)/1000000;
-        long tiempoSiTodoEnRAM = (referencias.size() * 25)/1000000;
-        long tiempoSiTodoEnSWAP = (referencias.size() * 10);
-        double porcentajeHits = (hits * 100.000) / referencias.size();
-        double porcentajeFallas = (fallas * 100.000) / referencias.size();
-
-        System.out.println("Numero de marcos de pagina: " + numeroDeMarcos);
-        System.out.println("Total de referencias: " + referencias.size());
-        System.out.println("Total de hits: " + hits);
-        System.out.printf("Porcentaje de hits: %.2f%%\n", porcentajeHits);
-        System.out.println("Numero de fallas: " + fallas);
-        System.out.printf("Porcentaje de fallas: %.2f%%\n", porcentajeFallas);
-        System.out.println("Tiempo total con hits y fallas: " + tiempoTotal + " ms");
-        System.out.println("Tiempo si todas las referencias estuvieran en RAM: " + tiempoSiTodoEnRAM + " ms");
-        System.out.println("Tiempo si todas las referencias fueran fallas de pagina: " + tiempoSiTodoEnSWAP + " ms");
-        System.out.println("------------------------------------");
+        Simulador simulador = new Simulador();
+        simulador.iniciarSimulacion(numeroDeMarcos, referencias);
     }
 
     private void cargarReferencias(String nombreArchivo) {
@@ -189,97 +152,6 @@ public class App {
 			e.printStackTrace();
 		}
 	}
-    private class ActualizadorReferencias extends Thread {
-		@Override
-		public void run() {
-			for (int[] referencia : referencias) {
-				int pagina = referencia[0];
-				boolean esEscritura = referencia[1] == 1;
-				synchronized (ram) {
-					if (ram.containsKey(pagina)) {
-						hits++;
-						int[] bits = ram.get(pagina);
-						bits[0] = 1; 
-						if (esEscritura) {
-							bits[1] = 1; 
-						}
-					} else {
-						fallas++;
-						if (ram.size() >= numeroDeMarcos) {
-							reemplazarPagina(pagina, esEscritura);
-						} else {
-							int bitM = 0;
-							if (esEscritura) {
-								bitM = 1;
-							}
-							ram.put(pagina, new int[]{1, bitM}); 
-						}
-					}
-				}
-				try {
-					Thread.sleep(1);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					break;
-				}
-			}
-		}
-	}
-	
-    private class ActualizadorBitR extends Thread {
-        @Override
-        public void run() {
-            while (x) {
-                synchronized (ram) {
-                    for (int[] bits : ram.values()) {
-                        bits[0] = 0; 
-                    }
-                }
-                try {
-                    Thread.sleep(2);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
-        }
-    }
-
-	private void reemplazarPagina(int paginaNueva, boolean esEscritura) {
-		Integer paginaAReemplazar = null;
-		int[] bitsAReemplazar = null;
-		synchronized (ram) {
-			for (Map.Entry<Integer, int[]> entry : ram.entrySet()) {
-				int[] bits = entry.getValue();
-				int quitar = entry.getKey();
-				if (bits[0] == 0 && bits[1] == 0) {
-					paginaAReemplazar = quitar;
-					break; 
-				}
-				else if (paginaAReemplazar == null || (bits[0] == 0 && bits[1] == 1 && (bitsAReemplazar == null || bitsAReemplazar[0] == 1))) {
-					paginaAReemplazar = quitar;
-					bitsAReemplazar = bits;
-				}
-				else if ((bits[0] == 1 && bits[1] == 0 && (bitsAReemplazar == null || bitsAReemplazar[0] == 1 && bitsAReemplazar[1] == 1))) {
-					paginaAReemplazar = quitar;
-					bitsAReemplazar = bits;
-				}
-				else if (bitsAReemplazar == null) {
-					paginaAReemplazar = quitar;
-					bitsAReemplazar = bits;
-				}
-			}
-			if (paginaAReemplazar != null) {
-				ram.remove(paginaAReemplazar);
-			}
-			int bitM = 0;
-			if (esEscritura) {
-				bitM = 1;
-			}
-			ram.put(paginaNueva, new int[]{1, bitM});
-		}
-	}
-	
 
     public static void main(String[] args) {
 		boolean continuar = true;
