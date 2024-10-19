@@ -14,7 +14,7 @@ public class RAM {
         this.fallas = 0;
     }
 
-    public synchronized  void agregarPagina(PaginaReal paginaReal) {
+    public synchronized void agregarPagina(PaginaReal paginaReal) {
         if (marcos.size() >= numeroDeMarcos) {
             reemplazarPagina(paginaReal);
         } else {
@@ -24,33 +24,41 @@ public class RAM {
 
     public synchronized void reemplazarPagina(PaginaReal nuevaPagina) {
         Integer paginaAReemplazar = null;
-        PaginaReal bitsAReemplazar = null;
+        PaginaReal bits = null;
         for (Map.Entry<Integer, PaginaReal> entry : marcos.entrySet()) {
             PaginaReal pagina = entry.getValue();
-            int quitar = entry.getKey();
+            int numeroPagina = entry.getKey();
             if (pagina.getBitReferencia() == 0 && pagina.getBitModificacion() == 0) {
-                paginaAReemplazar = quitar;
+                paginaAReemplazar = numeroPagina;
                 break; 
-            } else if (paginaAReemplazar == null || (pagina.getBitReferencia() == 0 && pagina.getBitModificacion() == 1 && (bitsAReemplazar == null || bitsAReemplazar.getBitReferencia() == 1))) {
-                paginaAReemplazar = quitar;
-                bitsAReemplazar = pagina;
-            } else if ((pagina.getBitReferencia() == 1 && pagina.getBitModificacion() == 0 && (bitsAReemplazar == null || bitsAReemplazar.getBitReferencia() == 1 && bitsAReemplazar.getBitModificacion() == 1))) {
-                paginaAReemplazar = quitar;
-                bitsAReemplazar = pagina;
-            } else if (bitsAReemplazar == null) {
-                paginaAReemplazar = quitar;
-                bitsAReemplazar = pagina;
+            }
+            else if (pagina.getBitReferencia() == 0 && pagina.getBitModificacion() == 1) {
+                if (paginaAReemplazar == null || (bits.getBitReferencia() == 1 || bits.getBitModificacion() == 1)) {
+                    paginaAReemplazar = numeroPagina;
+                    bits = pagina;
+                }
+            }
+            else if (pagina.getBitReferencia() == 1 && pagina.getBitModificacion() == 0) {
+                if (paginaAReemplazar == null || (bits.getBitReferencia() == 1 && bits.getBitModificacion() == 1)) {
+                    paginaAReemplazar = numeroPagina;
+                    bits = pagina;
+                }
+            }
+            else if (paginaAReemplazar == null) {
+                paginaAReemplazar = numeroPagina;
+                bits = pagina;
             }
         }
         if (paginaAReemplazar != null) {
             marcos.remove(paginaAReemplazar);
         }
-        nuevaPagina.setBitReferencia(1); 
+        nuevaPagina.setBitReferencia(1);
         if (nuevaPagina.getPaginaVirtual().esEscritura()) {
             nuevaPagina.setBitModificacion(1);
-        }
+        }        
         marcos.put(nuevaPagina.getPaginaVirtual().getNumero(), nuevaPagina);
     }
+    
 
     public int getHits() {
         return hits;
@@ -71,5 +79,4 @@ public class RAM {
     public Collection<PaginaReal> obtenerMarcos() {
         return marcos.values();
     }
-
 }

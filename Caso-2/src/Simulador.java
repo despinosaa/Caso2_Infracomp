@@ -17,7 +17,7 @@ public class Simulador {
 
         try {
             actualizadorReferencias.join();
-            actualizadorBitR.interrupt();
+            actualizadorBitR.detener();
             actualizadorBitR.join();
         } catch (InterruptedException e) {
             e.printStackTrace();

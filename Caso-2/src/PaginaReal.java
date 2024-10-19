@@ -1,35 +1,35 @@
 public class PaginaReal {
-    private final PaginaVirtual paginaVirtual;
-    private int bitReferencia;
-    private int bitModificacion; 
+    private final PaginaVirtual paginaV;
+    private int bitR;
+    private int bitM; 
 
-    public PaginaReal(PaginaVirtual paginaVirtual) {
-        this.paginaVirtual = paginaVirtual;
-        this.bitReferencia = 1;
-        if (paginaVirtual.esEscritura()) {
-            this.bitModificacion = 1;
+    public PaginaReal(PaginaVirtual paginaV) {
+        this.paginaV = paginaV;
+        this.bitR = 1;
+        if (paginaV.esEscritura()) {
+            this.bitM = 1;
         } else {
-            this.bitModificacion = 0;
+            this.bitM = 0;
         }
     }
 
     public PaginaVirtual getPaginaVirtual() {
-        return paginaVirtual;
+        return paginaV;
     }
 
     public int getBitReferencia() {
-        return bitReferencia;
+        return bitR;
     }
 
-    public void setBitReferencia(int bitReferencia) {
-        this.bitReferencia = bitReferencia;
+    public void setBitReferencia(int bit) {
+        this.bitR = bit;
     }
 
     public int getBitModificacion() {
-        return bitModificacion;
+        return bitM;
     }
 
-    public void setBitModificacion(int bitModificacion) {
-        this.bitModificacion = bitModificacion;
+    public void setBitModificacion(int bit) {
+        this.bitM = bit;
     }
 }

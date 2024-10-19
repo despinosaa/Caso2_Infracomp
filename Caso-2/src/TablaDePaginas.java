@@ -4,15 +4,15 @@ import java.util.Map;
 public class TablaDePaginas {
     private final Map<Integer, PaginaReal> tabla = new HashMap<>();
 
-    public void asignarPagina(PaginaVirtual paginaVirtual, PaginaReal paginaReal) {
-        tabla.put(paginaVirtual.getNumero(), paginaReal);
+    public void asignarRelacion(PaginaVirtual paginaV, PaginaReal paginaR) {
+        tabla.put(paginaV.getNumero(), paginaR);
     }
 
-    public PaginaReal obtenerPaginaReal(int numeroPagina) {
-        return tabla.get(numeroPagina);
+    public PaginaReal obtenerPaginaReal(int numero) {
+        return tabla.get(numero);
     }
 
-    public boolean contienePagina(int numeroPagina) {
-        return tabla.containsKey(numeroPagina);
+    public boolean contienePaginaVirtual(int numero) {
+        return tabla.containsKey(numero);
     }
 }

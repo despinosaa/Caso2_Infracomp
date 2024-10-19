@@ -14,10 +14,10 @@ public class ActualizadorReferencias extends Thread {
     @Override
     public void run() {
         synchronized (ram) {
-            for (int[] referencia : referencias) {
-                int numeroPagina = referencia[0];
-                boolean esEscritura = referencia[1] == 1;
-                if (tablaDePaginas.contienePagina(numeroPagina)) {
+            for (int[] paginas : referencias) {
+                int numeroPagina = paginas[0];
+                boolean esEscritura = (paginas[1] == 1);
+                if (tablaDePaginas.contienePaginaVirtual(numeroPagina)) {
                     PaginaReal pagina = tablaDePaginas.obtenerPaginaReal(numeroPagina);
                     ram.incrementarHits();
                     pagina.setBitReferencia(1);
@@ -27,7 +27,7 @@ public class ActualizadorReferencias extends Thread {
                 } else {
                     PaginaVirtual nuevaPaginaV = new PaginaVirtual(numeroPagina, esEscritura);
                     PaginaReal nuevaPaginaR = new PaginaReal(nuevaPaginaV);
-                    tablaDePaginas.asignarPagina(nuevaPaginaV, nuevaPaginaR);
+                    tablaDePaginas.asignarRelacion(nuevaPaginaV, nuevaPaginaR);
                     ram.agregarPagina(nuevaPaginaR);
                     ram.incrementarFallas();
                 }
