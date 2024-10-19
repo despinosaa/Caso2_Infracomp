@@ -189,7 +189,7 @@ public class App {
 			e.printStackTrace();
 		}
 	}
-    private class ActualizadorReferencias implements Runnable {
+    private class ActualizadorReferencias extends Thread {
 		@Override
 		public void run() {
 			for (int[] referencia : referencias) {
@@ -226,7 +226,7 @@ public class App {
 		}
 	}
 	
-    private class ActualizadorBitR implements Runnable {
+    private class ActualizadorBitR extends Thread {
         @Override
         public void run() {
             while (x) {
